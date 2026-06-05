@@ -1,10 +1,10 @@
 [project]
-name = "repl-nix-workspace"
+name = "claude-remote"
 version = "0.1.0"
-description = "Add your description here"
+description = "Voice control for Claude Code — push-to-talk PWA that transcribes locally and types into your terminal"
 requires-python = ">=3.11"
 dependencies = [
     "pillow>=12.1.0",
     "qrcode>=8.2",
-    "websockets>=16.0",
+    "websockets>=12.0,<14.0",
 ]
