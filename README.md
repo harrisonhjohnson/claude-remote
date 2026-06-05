@@ -14,23 +14,19 @@ Voice control for Claude Code from your phone. Push-to-talk microphone that tran
 
 Installs whisper-cpp, ffmpeg, Python packages, and the Whisper base model (~150MB).
 
-### 2. Start both servers
+### 2. Start the server
 
-In one terminal — the WebSocket server:
 ```bash
 ./run.sh
 ```
 
-In a second terminal — the web app your phone opens:
-```bash
-python3 serve_web.py
-```
+This starts both the WebSocket server and the web app your phone connects to.
 
 ### 3. Connect your phone
 
-The WebSocket server prints a QR code. **Scan it** — it opens the web app on your phone and auto-fills the connection URL.
+Scan the QR code printed in the terminal — it opens the web app on your phone and auto-connects.
 
-Or open `http://[your-mac-ip]:5000` manually and paste the WebSocket URL shown in the terminal.
+Or open the URL printed below the QR code manually.
 
 ### 4. Grant permissions (first run)
 

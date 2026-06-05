@@ -2,9 +2,12 @@
 """Claude Remote - Voice-to-terminal server for Claude Code."""
 
 import asyncio
+import http.server
 import json
 import secrets
 import socket
+import socketserver
+import threading
 from pathlib import Path
 from urllib.parse import quote
 
@@ -16,7 +19,22 @@ from keystroke import type_text, press_enter
 
 # Configuration
 PORT = 8765
+WEB_PORT = 5000
 TOKEN_LENGTH = 32
+
+WEB_DIR = Path(__file__).parent.parent / "web"
+
+
+def start_web_server():
+    """Serve the web app in a background thread."""
+    class Handler(http.server.SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory=str(WEB_DIR), **kwargs)
+        def log_message(self, format, *args):
+            pass  # suppress per-request logs
+
+    with socketserver.TCPServer(("0.0.0.0", WEB_PORT), Handler) as httpd:
+        httpd.serve_forever()
 
 # Generate session token
 session_token = secrets.token_urlsafe(TOKEN_LENGTH)
@@ -128,16 +146,18 @@ async def handle_connection(websocket):
 
 
 async def main():
-    """Start the WebSocket server."""
+    """Start the WebSocket server and serve the web app."""
+    # Web app server runs in a daemon thread — dies when main process exits
+    threading.Thread(target=start_web_server, daemon=True).start()
+
     local_ip = get_local_ip()
     ws_url = f"ws://{local_ip}:{PORT}/?token={session_token}"
-    web_url = f"http://{local_ip}:5000/?ws={quote(ws_url, safe='')}"
+    web_url = f"http://{local_ip}:{WEB_PORT}/?ws={quote(ws_url, safe='')}"
 
     print("\n" + "=" * 50, flush=True)
     print("  CLAUDE REMOTE SERVER", flush=True)
     print("=" * 50, flush=True)
     print(f"\nLocal IP: {local_ip}", flush=True)
-    print(f"Port: {PORT}", flush=True)
     print(f"\nScan QR code to open the web app and connect:\n", flush=True)
 
     display_qr(web_url)
