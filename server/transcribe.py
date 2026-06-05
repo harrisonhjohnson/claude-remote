@@ -1,5 +1,6 @@
 """Whisper transcription using whisper-cpp."""
 
+from __future__ import annotations
 import subprocess
 import tempfile
 import os
