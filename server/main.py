@@ -130,19 +130,18 @@ async def main():
     """Start the WebSocket server."""
     local_ip = get_local_ip()
     ws_url = f"ws://{local_ip}:{PORT}/?token={session_token}"
+    web_url = f"http://{local_ip}:5000/?ws={ws_url}"
 
-    # Also need the web app URL - for now just show ws URL
-    # In production, web app would be hosted on Replit
     print("\n" + "=" * 50, flush=True)
     print("  CLAUDE REMOTE SERVER", flush=True)
     print("=" * 50, flush=True)
     print(f"\nLocal IP: {local_ip}", flush=True)
     print(f"Port: {PORT}", flush=True)
-    print(f"\nScan this QR code with your phone:\n", flush=True)
+    print(f"\nScan QR code to open the web app and connect:\n", flush=True)
 
-    display_qr(ws_url)
+    display_qr(web_url)
 
-    print(f"\nOr connect to: {ws_url}", flush=True)
+    print(f"\nOr open: {web_url}", flush=True)
     print("\nWaiting for connection...", flush=True)
     print("=" * 50 + "\n", flush=True)
 

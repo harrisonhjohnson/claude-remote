@@ -1,115 +1,103 @@
 # Claude Remote
 
-Voice control for Claude Code from your phone. Push-to-talk microphone that types into your terminal.
+Voice control for Claude Code from your phone. Push-to-talk microphone that transcribes locally and types directly into your terminal.
+
+**Mac-only** — keystroke injection uses `osascript`. Phone and Mac must be on the same WiFi network.
 
 ## Quick Start
 
-### 1. Install Dependencies
+### 1. Install
 
 ```bash
 ./install.sh
 ```
 
-This installs:
-- whisper-cpp (speech-to-text)
-- ffmpeg (audio conversion)
-- Python packages (websockets, qrcode)
-- Whisper model (~150MB)
+Installs whisper-cpp, ffmpeg, Python packages, and the Whisper base model (~150MB).
 
-### 2. Start the Server
+### 2. Start both servers
 
+In one terminal — the WebSocket server:
 ```bash
-cd server
-python3 main.py
+./run.sh
 ```
 
-You'll see a QR code in your terminal.
+In a second terminal — the web app your phone opens:
+```bash
+python3 serve_web.py
+```
 
-### 3. Connect Your Phone
+### 3. Connect your phone
 
-Option A: **Scan the QR code** with your phone camera
+The WebSocket server prints a QR code. **Scan it** — it opens the web app on your phone and auto-fills the connection URL.
 
-Option B: Open the web app and paste the WebSocket URL manually
+Or open `http://[your-mac-ip]:5000` manually and paste the WebSocket URL shown in the terminal.
 
-### 4. Grant Permissions
+### 4. Grant permissions (first run)
 
-First time setup requires:
-- **Microphone access** on your phone
-- **Accessibility permissions** on your Mac (System Preferences → Privacy & Security → Accessibility → Terminal)
+- **Microphone** on your phone (browser will prompt)
+- **Accessibility** on your Mac: System Preferences → Privacy & Security → Accessibility → enable Terminal
 
 ## Usage
 
-1. **Hold the red button** to record voice
-2. **Release** to transcribe and type into your active window
-3. **Tap Enter** to submit the command
-
-Make sure Claude Code is in the foreground when using voice commands.
-
-## Hosting the Web App
-
-The web app in `/web` can be hosted on any static file server:
-
-**Replit:**
-1. Create a new Repl (HTML/CSS/JS)
-2. Upload the contents of `/web`
-3. Your phone accesses the Repl URL
-
-**Local (for testing):**
-```bash
-cd web
-python3 -m http.server 8080
-```
+1. Hold the red button to record
+2. Release to transcribe and type into your active window
+3. Make sure Claude Code (or your terminal) is in the foreground
 
 ## Architecture
 
 ```
-Phone (Browser)          Mac (Python Server)
-     │                         │
-     │  WebSocket (audio)      │
-     ├────────────────────────►│
-     │                         │
-     │                    whisper-cpp
-     │                         │
-     │  WebSocket (text)       │
-     │◄────────────────────────┤
-     │                         │
-     │                    osascript
-     │                    (keystroke)
-     │                         │
-     │                    Terminal
+Phone (Browser)           Mac (Python servers)
+     │                          │
+     │  open web app            │
+     ├─────────────────────────►│ serve_web.py :5000
+     │                          │
+     │  WebSocket (audio)       │
+     ├─────────────────────────►│ run.sh :8765
+     │                          │
+     │                     whisper-cpp
+     │                          │
+     │  WebSocket (transcript)  │
+     │◄─────────────────────────┤
+     │                          │
+     │                     osascript
+     │                     (keystroke injection)
+     │                          │
+     │                     Terminal / Claude Code
 ```
 
 ## Troubleshooting
 
-### "Microphone access denied"
+**"Microphone access denied"**
 - iOS: Settings → Safari → Microphone → Allow
-- Android: Chrome settings → Site settings → Microphone
+- Android: Chrome → Site settings → Microphone
 
-### "Connection failed"
-- Ensure phone and Mac are on same WiFi network
-- Check that port 8765 isn't blocked by firewall
-- Try the IP address shown in the QR code URL
+**"Connection failed"**
+- Phone and Mac must be on the same WiFi
+- Check port 8765 isn't blocked by your firewall
+- Use the IP shown in the QR code, not `localhost`
 
-### "Transcription not working"
-- Check whisper model exists: `ls ~/.cache/whisper/`
-- Test whisper: `whisper-cpp --help`
+**"Transcription not working"**
+- Check model exists: `ls ~/.cache/whisper/`
+- Test binary: `whisper-cpp --help`
 
-### "Text not typing"
-- Grant Accessibility permission to Terminal
-- Make sure target app is in foreground
+**"Text not typing"**
+- Re-check Accessibility permission in System Preferences
+- Make sure the target window is in the foreground
 
 ## Configuration
 
-Edit `server/main.py` to change:
-- `PORT` - WebSocket port (default: 8765)
-- Model path in `transcribe.py` for different Whisper models
+Edit `server/main.py`:
+- `PORT` — WebSocket port (default: 8765)
+
+Edit `server/transcribe.py`:
+- Model path for a larger/different Whisper model
 
 ## Performance
 
-| Stage | Typical Latency |
-|-------|-----------------|
+| Stage | Typical latency |
+|---|---|
 | Audio capture → server | ~20ms |
-| Whisper transcription | 200-400ms |
+| Whisper transcription | 200–400ms |
 | Keystroke injection | ~10ms |
 | **Total** | **~400ms** |
 
