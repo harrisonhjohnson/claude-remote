@@ -40,6 +40,8 @@ def start_web_server():
             super().__init__(*args, directory=str(WEB_DIR), **kwargs)
         def log_message(self, format, *args):
             pass
+        def address_string(self):
+            return self.client_address[0]  # skip reverse DNS lookup
 
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     ctx.load_cert_chain(CERT_FILE, KEY_FILE)
