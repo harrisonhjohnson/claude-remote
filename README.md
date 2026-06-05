@@ -33,6 +33,18 @@ Scan the QR code printed in the terminal — it opens the web app on your phone 
 - **Microphone** on your phone (browser will prompt)
 - **Accessibility** on your Mac: System Preferences → Privacy & Security → Accessibility → enable Terminal
 
+## Demo
+
+1. Open Claude Code in your terminal
+2. Run `./run.sh` and scan the QR code with your phone
+3. Accept the certificate warning in your browser
+4. Grant microphone access when prompted
+5. Hold the button and say: *"Write a Python function that reverses a string"*
+6. Release — watch it transcribe and type directly into Claude Code
+7. Hold again and say *"Now add a docstring"* — it appends without you touching the keyboard
+
+The transcription runs entirely on your Mac via whisper-cpp. Nothing leaves your machine.
+
 ## Usage
 
 1. Hold the red button to record
