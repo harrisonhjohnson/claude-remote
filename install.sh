@@ -53,6 +53,20 @@ source venv/bin/activate
 pip install -r requirements.txt
 deactivate
 
+# Generate self-signed TLS cert for HTTPS (required for microphone access)
+echo ""
+echo "Generating TLS certificate for HTTPS..."
+if [ ! -f "$SCRIPT_DIR/server/cert.pem" ]; then
+    openssl req -x509 -newkey rsa:2048 \
+        -keyout "$SCRIPT_DIR/server/cert.key" \
+        -out "$SCRIPT_DIR/server/cert.pem" \
+        -days 3650 -nodes \
+        -subj "/CN=claude-remote" 2>/dev/null
+    echo "Certificate generated."
+else
+    echo "Certificate already exists."
+fi
+
 echo ""
 echo "=========================================="
 echo "  Installation Complete!"

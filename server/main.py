@@ -7,6 +7,7 @@ import json
 import secrets
 import socket
 import socketserver
+import ssl
 import threading
 from pathlib import Path
 from urllib.parse import quote
@@ -23,17 +24,28 @@ WEB_PORT = 5000
 TOKEN_LENGTH = 32
 
 WEB_DIR = Path(__file__).parent.parent / "web"
+CERT_FILE = Path(__file__).parent / "cert.pem"
+KEY_FILE = Path(__file__).parent / "cert.key"
 
 
 def start_web_server():
-    """Serve the web app in a background thread."""
+    """Serve the web app over HTTPS in a background thread.
+
+    HTTPS is required for getUserMedia (microphone) on non-localhost origins.
+    The self-signed cert triggers a browser warning on first visit — accept it
+    once and the browser remembers.
+    """
     class Handler(http.server.SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, directory=str(WEB_DIR), **kwargs)
         def log_message(self, format, *args):
-            pass  # suppress per-request logs
+            pass
+
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ctx.load_cert_chain(CERT_FILE, KEY_FILE)
 
     with socketserver.TCPServer(("0.0.0.0", WEB_PORT), Handler) as httpd:
+        httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True)
         httpd.serve_forever()
 
 # Generate session token
@@ -152,7 +164,7 @@ async def main():
 
     local_ip = get_local_ip()
     ws_url = f"ws://{local_ip}:{PORT}/?token={session_token}"
-    web_url = f"http://{local_ip}:{WEB_PORT}/?ws={quote(ws_url, safe='')}"
+    web_url = f"https://{local_ip}:{WEB_PORT}/?ws={quote(ws_url, safe='')}"
 
     print("\n" + "=" * 50, flush=True)
     print("  CLAUDE REMOTE SERVER", flush=True)

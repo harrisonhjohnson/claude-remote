@@ -26,7 +26,7 @@ This starts both the WebSocket server and the web app your phone connects to.
 
 Scan the QR code printed in the terminal — it opens the web app on your phone and auto-connects.
 
-Or open the URL printed below the QR code manually.
+> **First visit:** your browser will warn about a self-signed certificate. Tap "Advanced → Proceed" to continue. This is expected — HTTPS is required for microphone access on a local network, and the cert is generated locally by `install.sh`.
 
 ### 4. Grant permissions (first run)
 
