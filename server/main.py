@@ -28,6 +28,33 @@ CERT_FILE = Path(__file__).parent / "cert.pem"
 KEY_FILE = Path(__file__).parent / "cert.key"
 
 
+def ensure_cert(ip: str):
+    """Generate a self-signed cert with the correct SAN for the local IP.
+
+    Mobile browsers require a Subject Alternative Name matching the IP —
+    without it they silently drop the TLS connection instead of showing
+    the 'proceed anyway' prompt.  Regenerate whenever the IP changes.
+    """
+    import subprocess
+    regen = True
+    if CERT_FILE.exists() and KEY_FILE.exists():
+        result = subprocess.run(
+            ["openssl", "x509", "-in", str(CERT_FILE), "-noout", "-text"],
+            capture_output=True, text=True
+        )
+        if f"IP Address:{ip}" in result.stdout:
+            regen = False
+
+    if regen:
+        subprocess.run([
+            "openssl", "req", "-x509", "-newkey", "rsa:2048",
+            "-keyout", str(KEY_FILE), "-out", str(CERT_FILE),
+            "-days", "3650", "-nodes",
+            "-subj", f"/CN={ip}",
+            "-addext", f"subjectAltName=IP:{ip}",
+        ], capture_output=True, check=True)
+
+
 def start_web_server():
     """Serve the web app over HTTPS in a background thread.
 
@@ -45,11 +72,12 @@ def start_web_server():
 
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     ctx.load_cert_chain(CERT_FILE, KEY_FILE)
+    ctx.set_ciphers("ECDH+AESGCM:ECDH+AES256:ECDH+AES128:!aNULL:!MD5")
+    ctx.options |= ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 | ssl.OP_SINGLE_ECDH_USE
 
-    # Wrap each accepted client socket individually — wrapping the listening
-    # socket directly breaks TLS handshakes for connections from other devices.
-    class TLSServer(socketserver.TCPServer):
+    class TLSServer(socketserver.ThreadingTCPServer):
         allow_reuse_address = True
+        daemon_threads = True
         def get_request(self):
             client, addr = self.socket.accept()
             return ctx.wrap_socket(client, server_side=True), addr
@@ -168,10 +196,11 @@ async def handle_connection(websocket):
 
 async def main():
     """Start the WebSocket server and serve the web app."""
+    local_ip = get_local_ip()
+    ensure_cert(local_ip)
+
     # Web app server runs in a daemon thread — dies when main process exits
     threading.Thread(target=start_web_server, daemon=True).start()
-
-    local_ip = get_local_ip()
     ws_url = f"ws://{local_ip}:{PORT}/?token={session_token}"
     web_url = f"https://{local_ip}:{WEB_PORT}/?ws={quote(ws_url, safe='')}"
 
