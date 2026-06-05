@@ -44,8 +44,15 @@ def start_web_server():
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     ctx.load_cert_chain(CERT_FILE, KEY_FILE)
 
-    with socketserver.TCPServer(("0.0.0.0", WEB_PORT), Handler) as httpd:
-        httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True)
+    # Wrap each accepted client socket individually — wrapping the listening
+    # socket directly breaks TLS handshakes for connections from other devices.
+    class TLSServer(socketserver.TCPServer):
+        allow_reuse_address = True
+        def get_request(self):
+            client, addr = self.socket.accept()
+            return ctx.wrap_socket(client, server_side=True), addr
+
+    with TLSServer(("0.0.0.0", WEB_PORT), Handler) as httpd:
         httpd.serve_forever()
 
 # Generate session token
