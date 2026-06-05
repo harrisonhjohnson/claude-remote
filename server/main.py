@@ -6,6 +6,7 @@ import json
 import secrets
 import socket
 from pathlib import Path
+from urllib.parse import quote
 
 import qrcode
 import websockets
@@ -130,7 +131,7 @@ async def main():
     """Start the WebSocket server."""
     local_ip = get_local_ip()
     ws_url = f"ws://{local_ip}:{PORT}/?token={session_token}"
-    web_url = f"http://{local_ip}:5000/?ws={ws_url}"
+    web_url = f"http://{local_ip}:5000/?ws={quote(ws_url, safe='')}"
 
     print("\n" + "=" * 50, flush=True)
     print("  CLAUDE REMOTE SERVER", flush=True)
